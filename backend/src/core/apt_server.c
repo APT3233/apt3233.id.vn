@@ -19,6 +19,7 @@
 #include "apt_linkedlist.h"
 #include "apt_parse.h"
 #include "../utils/apt_time.h"
+#include "../utils/apt_log.h"
 
 
 #define PORT "4444" 
@@ -26,17 +27,6 @@
 #define SERVER_FILES "./serverfiles"
 #define SERVER_ROOT "./www"
 
-
-void log_info(int type, const char* title, const char* msg)
-{
-    if(type < 0) 
-        printf("[\033[1;36mERROR\033[0m][\033[0;35m%s\033[0m] %s %s\n", get_current_time(), title, msg);
-    else if(type == 0) 
-        printf("[\033[1;36mWARNING\033[0m][\033[0;35m%s\033[0m] %s %s\n", get_current_time(), title, msg);
-    else 
-        printf("[\033[1;36mINFO\033[0m][\033[0;35m%s\033[0m] %s %s\n", get_current_time(), title, msg);
-    
-}
 
 
 /**
@@ -246,6 +236,7 @@ void handle_http_request(int fd, Cache *cache)
     
     else if (strcmp(http_request.method, "POST") == 0) 
         send_response(fd, "HTTP/1.1 405 METHOD NOT ALLOWED", "text/plain", "Method Not Allowed", 15);
+        // handle_post(fd, cache, http_request);
     else 
         send_response(fd, "HTTP/1.1 501 NOT IMPLEMENTED", "text/plain", "Not Implemented", 14);
     

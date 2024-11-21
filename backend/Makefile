@@ -6,7 +6,7 @@ DST_DIR=dst
 LOG_FILE=sys.log
 PID_FILE=server.pid
 
-OBJS=$(BUILD_DIR)/apt_server.o $(BUILD_DIR)/apt_net.o $(BUILD_DIR)/apt_file.o $(BUILD_DIR)/apt_mime.o $(BUILD_DIR)/apt_cache.o $(BUILD_DIR)/apt_hashtable.o $(BUILD_DIR)/apt_linkedlist.o $(BUILD_DIR)/apt_parse.o $(BUILD_DIR)/apt_time.o
+OBJS=$(BUILD_DIR)/apt_server.o $(BUILD_DIR)/apt_net.o $(BUILD_DIR)/apt_file.o $(BUILD_DIR)/apt_mime.o $(BUILD_DIR)/apt_cache.o $(BUILD_DIR)/apt_hashtable.o $(BUILD_DIR)/apt_linkedlist.o $(BUILD_DIR)/apt_parse.o $(BUILD_DIR)/apt_time.o $(BUILD_DIR)/apt_log.o
 
 all: $(BUILD_DIR) $(DST_DIR) $(DST_DIR)/server
 

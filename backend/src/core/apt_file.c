@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/stat.h>
+#include <unistd.h>
 #include "apt_file.h"
 
 /**
@@ -36,6 +37,7 @@ struct file_data *file_load(char *filename)
     p = buffer = malloc(bytes_remaining);
 
     if (buffer == NULL) {
+        fclose(fp);
         return NULL;
     }
 
@@ -43,6 +45,7 @@ struct file_data *file_load(char *filename)
     while (bytes_read = fread(p, 1, bytes_remaining, fp), bytes_read != 0 && bytes_remaining > 0) {
         if (bytes_read == -1) {
             free(buffer);
+            fclose(fp);
             return NULL;
         }
 
@@ -62,6 +65,7 @@ struct file_data *file_load(char *filename)
     filedata->data = buffer;
     filedata->size = total_bytes;
 
+    fclose(fp);
     return filedata;
 }
 
