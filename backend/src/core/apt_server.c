@@ -48,47 +48,33 @@ void log_info(int type, const char* title, const char* msg)
  * 
  * Return the value from the send() function.
  */
-int send_response(int fd, char *header, char *content_type, const void *body, size_t content_length)
+int send_response(int fd, char *header, char *content_type, const void *body, size_t content_length) 
 {
-    const size_t max_response_size = 262144;
-    char response[max_response_size];
-
-    int header_length = snprintf(response, max_response_size,
-                                 "%s\r\n"
-                                 "Content-Type: %s\r\n"
-                                 "Content-Length: %zu\r\n"
-                                 "\r\n",
-                                 header, content_type, content_length);
-
-    if (header_length < 0) {
-        perror("Header creation failed");
-        return -1;
-    }
-
-    if((size_t)header_length >= max_response_size)
+    size_t header_size = snprintf(NULL, 0,
+                                  "%s\r\n"
+                                  "Content-Type: %s\r\n"
+                                  "Content-Length: %zu\r\n\r\n",
+                                  header, content_type, content_length);
+    size_t total_size = header_size + content_length;
+    char *response = malloc(total_size);
+    if (response == NULL) 
     {
-        fprintf(stderr, "Header length exceeds buffer size\n");
+        perror("malloc failed");
         return -1;
     }
 
-    // Ensure we do  not overflow the buffer
-    if ((size_t)header_length + content_length >= max_response_size) {
-        fprintf(stderr, "Response too large for buffer");
-        return -1;
-    }
+    snprintf(response, header_size + 1, "%s\r\nContent-Type: %s\r\nContent-Length: %zu\r\n\r\n", header, content_type, content_length);
+    memcpy(response + header_size, body, content_length);
 
-    memcpy(response + header_length, body, content_length);  // Append the body after the header
-
-    // Send it all!
-    size_t response_length = (size_t)header_length + content_length;
-    ssize_t rv = send(fd, response, response_length, 0);
-
-    if (rv < 0) {
+    ssize_t rv = send(fd, response, total_size, 0);
+    if (rv < 0) 
         perror("send");
-    }
+    
 
+    free(response);
     return rv;
 }
+
 
 /**
  * Send a /d20 endpoint response
@@ -128,36 +114,38 @@ void get_rand(int fd)
 /**
  * Send a 404 response
  */
-void resp_404(int fd, Cache *cache)
+void resp_404(int fd, Cache *cache) 
 {
-    char *filepath = malloc(2048);  // Cấp phát động
-    if (filepath == NULL) {
+    char *filepath = malloc(2048);
+    if (filepath == NULL) 
+    {
         perror("malloc failed");
         return; 
     }
-    struct file_data *filedata; 
-    char *mime_type;
 
-    snprintf(filepath, sizeof filepath, "%s/404.html", SERVER_FILES);
+    snprintf(filepath, 2048, "%s/404.html", SERVER_FILES);
     Cache_Entry *entry = cache_get(cache, filepath);
-    if(entry != NULL)
-    {
+
+    if (entry != NULL) 
         send_response(fd, "HTTP/1.1 404 NOT FOUND", entry->content_type, entry->content, entry->content_length);
-        log_info(1, "Completed", "\n");
-        return;
-    }
-    
-    filedata = file_load(filepath);
-    mime_type = mime_type_get(filepath);
-    if (filedata == NULL) {
-        char *default_404_body = "<html><body><h1>404 Not Found</h1></body></html>";
-        send_response(fd, "HTTP/1.1 404 NOT FOUND", mime_type, default_404_body, strlen(default_404_body));
-        return;
+    else 
+    {
+        struct file_data *filedata = file_load(filepath);
+        if (filedata != NULL) 
+        {
+            send_response(fd, "HTTP/1.1 404 NOT FOUND", mime_type_get(filepath), filedata->data, filedata->size);
+            file_free(filedata);
+        } 
+        else 
+        {
+            const char *default_404_body = "<html><body><h1>404 Not Found</h1></body></html>";
+            send_response(fd, "HTTP/1.1 404 NOT FOUND", "text/html", default_404_body, strlen(default_404_body));
+        }
     }
 
-    file_free(filedata);
-    free(filepath);
+    free(filepath); 
 }
+
 
 
 int is_path_safe(const char *path) {
