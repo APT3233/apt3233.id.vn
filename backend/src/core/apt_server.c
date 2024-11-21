@@ -128,25 +128,35 @@ void get_rand(int fd)
 /**
  * Send a 404 response
  */
-void resp_404(int fd)
+void resp_404(int fd, Cache *cache)
 {
-    char filepath[4096];
+    char *filepath = malloc(2048);  // Cấp phát động
+    if (filepath == NULL) {
+        perror("malloc failed");
+        return; 
+    }
     struct file_data *filedata; 
     char *mime_type;
 
     snprintf(filepath, sizeof filepath, "%s/404.html", SERVER_FILES);
+    Cache_Entry *entry = cache_get(cache, filepath);
+    if(entry != NULL)
+    {
+        send_response(fd, "HTTP/1.1 404 NOT FOUND", entry->content_type, entry->content, entry->content_length);
+        log_info(1, "Completed", "\n");
+        return;
+    }
+    
     filedata = file_load(filepath);
+    mime_type = mime_type_get(filepath);
     if (filedata == NULL) {
-        // TODO: make this non-fatal
-        fprintf(stderr, "cannot find system 404 file\n");
-        exit(3);
+        char *default_404_body = "<html><body><h1>404 Not Found</h1></body></html>";
+        send_response(fd, "HTTP/1.1 404 NOT FOUND", mime_type, default_404_body, strlen(default_404_body));
+        return;
     }
 
-    mime_type = mime_type_get(filepath);
-
-    send_response(fd, "HTTP/1.1 404 NOT FOUND", mime_type, filedata->data, filedata->size);
-
     file_free(filedata);
+    free(filepath);
 }
 
 
@@ -171,7 +181,7 @@ void get_file(int fd, Cache *cache, char *request_path)
 
     if (!is_path_safe(request_path)) {
         log_info(-1, "Unsafe path requested: %s", request_path);
-        resp_404(fd);
+        resp_404(fd, cache);
         return;
     }
 
@@ -191,7 +201,7 @@ void get_file(int fd, Cache *cache, char *request_path)
     if (filedata == NULL) {
         log_info(-1, "File not found: ", filepath);
         printf("\n");
-        resp_404(fd);
+        resp_404(fd, cache);
         return;
     }
 
